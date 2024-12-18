@@ -1,14 +1,22 @@
 <?php
+  session_start();
+
+  if (!isset($_SESSION['login'])){
+    header("Location: login.php");
+  };
+
 	require_once(dirname(dirname(__FILE__)) . '/includes/MySQLHandler.php');
+	require_once(dirname(dirname(__FILE__)) . '/config/config.php');
 	$id=$_GET['id'];
 	if(isset($_GET['id'])) {
 		$sql = "SELECT * FROM users WHERE idusers=$id LIMIT 1";
-		$result=mysql_query($sql);
+		$result=mysqli_query($db, $sql);
 	} else {
 		header("Location: index.php?id=0");
 		exit;
 	 }
-?><!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
 <!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
 <!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
@@ -39,27 +47,18 @@
 		<fieldset>
 			<legend>Details</legend>
 				<?php 
-					if ($content = mysql_fetch_array($result)) {
+					if ($content = mysqli_fetch_array($result)) {
 						echo '<br/>User ID: <b>'. $content['idusers'].'</b><br/><br/>';
 						echo 'User name: <b>'. $content['name'].'</b><br/><br/>';
 						echo 'E-mail: <b>'. $content['email'].'</b><br/><br/>';
 					} else if (!$result) {
-						echo("Database query failed: " . mysql_error());
+						echo("Database query failed: ");
 						} else {		
 							echo 'Error! User does not exists';
 					}
 				?><br/>
 		</fieldset></p><br/>
 	</div><br/><br/><br/>
-	<center>
-		<?php 
-			if($showhint === true && isset($sql)) { 
-				echo '<div class="eight columns centered"><div class="alert-box secondary">SQL Query: ';
-				echo $sql; 
-				echo '<a href="" class="close">&times;</a></div></div>';			
-									} 
-		?>
-	</center>
 </div>  
   <!-- Included JS Files (Uncompressed) -->
   <!--  

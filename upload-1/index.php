@@ -1,98 +1,80 @@
+<?php
+// Ensure uploads directory exists (minimal safeguard)
+$upload_dir = 'uploads/';
+if (!file_exists($upload_dir)) {
+    mkdir($upload_dir, 0777, true);
+}
+
+// Error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// VULNERABLE: Intentionally weak file upload mechanism
+if(isset($_POST['upload'])) {
+    // CRITICAL VULNERABILITY: Direct file name usage without sanitization
+    $filename = $_FILES['userfile']['name'];
+    
+    // VULNERABLE: No file type validation
+    // VULNERABLE: No file size checking
+    // VULNERABLE: No extension filtering
+    $destination = $upload_dir . $filename;
+    
+    // VULNERABLE: Direct move_uploaded_file with no additional checks
+    if (move_uploaded_file($_FILES['userfile']['tmp_name'], $destination)) {
+        // VULNERABLE: Potential XSS in displaying uploaded file path
+        echo "<div class=\"alert-box success\">Upload successful: <a href='$destination'>View File</a><a href=\"\" class=\"close\">&times;</a></div>";
+    } else {
+        echo "<div class=\"alert-box alert\">Upload failed. Check permissions and file size.<a href=\"\" class=\"close\">&times;</a></div>";
+    }
+}
+
+// BONUS VULNERABILITY: File listing function
+function list_uploaded_files($directory) {
+    $files = glob($directory . '*');
+    if ($files) {
+        echo "<h3>Uploaded Files:</h3>";
+        echo "<ul>";
+        foreach ($files as $file) {
+            // VULNERABLE: Direct file path display
+            echo "<li><a href='" . htmlspecialchars($file) . "'>" . htmlspecialchars(basename($file)) . "</a></li>";
+        }
+        echo "</ul>";
+    }
+}
+?>
 <!DOCTYPE html>
-<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<html class="no-js" lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width" />
-  <title>OWASP Bricks File Upload #1</title>
-  <!-- Included CSS Files (Uncompressed) -->
-  <!--
-  <link rel="stylesheet" href="../stylesheets/foundation.css">
-  -->
-  <!-- Included CSS Files (Compressed) -->
-  <link rel="stylesheet" href="../stylesheets/foundation.min.css">
-  <link rel="stylesheet" href="../stylesheets/app.css">
-  <link rel="icon" href="../favicon.ico" type="image/x-icon">
-  <script src="../javascripts/modernizr.foundation.js"></script>
-  <!-- IE Fix for HTML5 Tags -->
-  <!--[if lt IE 9]>
-    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-  <![endif]-->
-<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'></head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>OWASP Bricks File Upload #1</title>
+    <link rel="stylesheet" href="../stylesheets/foundation.min.css">
+    <link rel="stylesheet" href="../stylesheets/app.css">
+    <link rel="icon" href="../favicon.ico" type="image/x-icon">
+    <script src="../javascripts/modernizr.foundation.js"></script>
+</head>
 <body>
 <div class="row">
-	<div class="four columns centered">
-		<br/><br/><a href="../index.php"><img src="../images/bricks.jpg" /></a><br/>
-		<p>
-			<?php
-				if(isset($_POST['upload'])) {
-					$destination = 'uploads/' . $_FILES['userfile']['name'];
-					if (move_uploaded_file($_FILES['userfile']['tmp_name'], $destination)) {
-						echo "<div class=\"alert-box success\">Upload succesful: <a href='$destination'>here</a><a href=\"\" class=\"close\">&times;</a></div>";
-						}
-					else {
-						echo "<div class=\"alert-box alert\">Upload failed.<a href=\"\" class=\"close\">&times;</a></div>";
-						}
-											}
-			?>
-			<form enctype="multipart/form-data" action="index.php" method="POST">
-				<fieldset>
-					<legend>Upload</legend>
-					<input name="userfile" type="file" class="small button" /><br/><br/>
-					<input type="submit" name="upload" class="small button" id="upload" value="Upload" /><br/><br/>
-				</fieldset>
-			</form>
-		</p><br/>
-	</div>
-</div>
-  
-  <!-- Included JS Files (Uncompressed) -->
-  <!--
-  
-  <script src="../javascripts/jquery.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.mediaQueryToggle.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.forms.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.reveal.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.orbit.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.navigation.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.buttons.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.tabs.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.tooltips.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.accordion.js"></script>
-  
-  <script src="../javascripts/jquery.placeholder.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.alerts.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.topbar.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.joyride.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.clearing.js"></script>
-  
-  <script src="../javascripts/jquery.foundation.magellan.js"></script>
-  
-  -->
-  
-  <!-- Included JS Files (Compressed) -->
-  <script src="../javascripts/jquery.js"></script>
-  <script src="../javascripts/foundation.min.js"></script>
-  
-  <!-- Initialize JS Plugins -->
-  <script src="../javascripts/app.js"></script>
+    <div class="four columns centered">
+        <br/><br/><a href="../index.php"><img src="../images/bricks.jpg" /></a><br/>
+        <p>
+            <!-- VULNERABLE: No client-side or server-side file type restrictions -->
+            <form enctype="multipart/form-data" action="index.php" method="POST">
+                <fieldset>
+                    <legend>Upload (No Restrictions)</legend>
+                    <input name="userfile" type="file" class="small button" /><br/><br/>
+                    <input type="submit" name="upload" class="small button" id="upload" value="Upload" /><br/><br/>
+                </fieldset>
+            </form>
 
-  
-  
+            <!-- Bonus: File Listing -->
+            <?php list_uploaded_files($upload_dir); ?>
+        </p><br/>
+    </div>
+</div>
+
+<script src="../javascripts/jquery.js"></script>
+<script src="../javascripts/foundation.min.js"></script>
+<script src="../javascripts/app.js"></script>
 </body>
 </html>
