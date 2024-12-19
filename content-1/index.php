@@ -1,40 +1,46 @@
 <?php
-  session_start();
+session_start();
 
-  if (!isset($_SESSION['login'])){
+// Check if user is logged in
+if (!isset($_SESSION['login'])) {
     header("Location: login.php");
-  };
+    exit;
+}
 
-	require_once(dirname(dirname(__FILE__)) . '/includes/MySQLHandler.php');
-	require_once(dirname(dirname(__FILE__)) . '/config/config.php');
-	$id=$_GET['id'];
-	if(isset($_GET['id'])) {
-		$sql = "SELECT * FROM users WHERE idusers=$id LIMIT 1";
-		$result=mysqli_query($db, $sql);
-	} else {
-		header("Location: index.php?id=0");
-		exit;
-	 }
+require_once(dirname(dirname(__FILE__)) . '/includes/MySQLHandler.php');
+require_once(dirname(dirname(__FILE__)) . '/config/config.php');
+
+// Validate and sanitize user input
+$requested_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+
+// Ensure user can only access their own profile
+if (!$requested_id || $requested_id != $_SESSION['user_id']) {
+    // Redirect to user's own profile or show an error
+    header("Location: index.php?id=" . $_SESSION['user_id']);
+    exit;
+}
+
+// Prepare statement to prevent SQL injection
+$stmt = mysqli_prepare($db, "SELECT * FROM users WHERE idusers = ? LIMIT 1");
+mysqli_stmt_bind_param($stmt, "i", $requested_id);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+
+// Check if user exists
+if (!$result) {
+    die("Database query failed");
+}
 ?>
 <!DOCTYPE html>
-<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
-<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
-<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<html class="no-js" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width" />
-  <title>OWASP Bricks Content Page #1</title>  
-  <!-- Included CSS Files (Uncompressed) -->
-  <!--
-  <link rel="stylesheet" href="../stylesheets/foundation.css">
-  -->  
-  <!-- Included CSS Files (Compressed) -->
+  <title>User Profile</title>
   <link rel="stylesheet" href="../stylesheets/foundation.min.css">
   <link rel="stylesheet" href="../stylesheets/app.css">
   <link rel="icon" href="../favicon.ico" type="image/x-icon">
   <script src="../javascripts/modernizr.foundation.js"></script>
-  <!-- IE Fix for HTML5 Tags -->
   <!--[if lt IE 9]>
     <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
@@ -42,47 +48,26 @@
 </head>
 <body>
 <div class="row">
-	<div class="four columns centered">
-		<br/><br/><a href="../index.php"><img src="../images/bricks.jpg" /></a><p>
-		<fieldset>
-			<legend>Details</legend>
-				<?php 
-					if ($content = mysqli_fetch_array($result)) {
-						echo '<br/>User ID: <b>'. $content['idusers'].'</b><br/><br/>';
-						echo 'User name: <b>'. $content['name'].'</b><br/><br/>';
-						echo 'E-mail: <b>'. $content['email'].'</b><br/><br/>';
-					} else if (!$result) {
-						echo("Database query failed: ");
-						} else {		
-							echo 'Error! User does not exists';
-					}
-				?><br/>
-		</fieldset></p><br/>
-	</div><br/><br/><br/>
+  <div class="four columns centered">
+    <br/><br/><a href="../index.php"><img src="../images/bricks.jpg" /></a><p>
+    <fieldset>
+      <legend>Details</legend>
+        <?php
+        // Fetch and display user details
+        if ($content = mysqli_fetch_array($result)) {
+            // Escape output to prevent XSS
+            echo '<br/>User ID: <b>'. htmlspecialchars($content['idusers']) .'</b><br/><br/>';
+            echo 'User name: <b>'. htmlspecialchars($content['name']) .'</b><br/><br/>';
+            echo 'E-mail: <b>'. htmlspecialchars($content['email']) .'</b><br/><br/>';
+        } else {
+            echo 'Error! User does not exist';
+        }
+        ?><br/>
+    </fieldset></p><br/>
+  </div><br/><br/><br/>
 </div>  
-  <!-- Included JS Files (Uncompressed) -->
-  <!--  
-  <script src="../javascripts/jquery.js"></script>  
-  <script src="../javascripts/jquery.foundation.mediaQueryToggle.js"></script>  
-  <script src="../javascripts/jquery.foundation.forms.js"></script>  
-  <script src="../javascripts/jquery.foundation.reveal.js"></script>  
-  <script src="../javascripts/jquery.foundation.orbit.js"></script>  
-  <script src="../javascripts/jquery.foundation.navigation.js"></script>  
-  <script src="../javascripts/jquery.foundation.buttons.js"></script>  
-  <script src="../javascripts/jquery.foundation.tabs.js"></script>  
-  <script src="../javascripts/jquery.foundation.tooltips.js"></script>  
-  <script src="../javascripts/jquery.foundation.accordion.js"></script>  
-  <script src="../javascripts/jquery.placeholder.js"></script>  
-  <script src="../javascripts/jquery.foundation.alerts.js"></script>  
-  <script src="../javascripts/jquery.foundation.topbar.js"></script>  
-  <script src="../javascripts/jquery.foundation.joyride.js"></script>  
-  <script src="../javascripts/jquery.foundation.clearing.js"></script>  
-  <script src="../javascripts/jquery.foundation.magellan.js"></script>  
-  -->  
-  <!-- Included JS Files (Compressed) -->
   <script src="../javascripts/jquery.js"></script>
   <script src="../javascripts/foundation.min.js"></script>  
-  <!-- Initialize JS Plugins -->
   <script src="../javascripts/app.js"></script>  
 </body>
 </html>
